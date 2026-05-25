@@ -1,0 +1,54 @@
+{
+  "name": "@seiva-ai/mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for managing Seiva platform via Claude Code, VS Code, Codex and Antigravity",
+  "type": "module",
+  "bin": {
+    "seiva-mcp-server": "./client.js"
+  },
+  "main": "client.js",
+  "files": [
+    "client.js",
+    "admin.js",
+    "index.js",
+    "checkout_tools.js",
+    "shared.js",
+    "migration.js",
+    "tools_manifest.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "node client.js",
+    "start:client": "node client.js",
+    "start:admin": "node admin.js",
+    "test": "node --test 'test/*.test.js'"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@seiva-ai/cli": "^0.1.0",
+    "zod": "^3.23.0"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joaopedromano-source/seiva-mcp.git"
+  },
+  "homepage": "https://platform.seiva.ai",
+  "bugs": {
+    "url": "https://github.com/joaopedromano-source/seiva-mcp/issues"
+  },
+  "keywords": [
+    "seiva",
+    "mcp",
+    "model-context-protocol",
+    "claude-code",
+    "anthropic"
+  ],
+  "license": "MIT"
+}

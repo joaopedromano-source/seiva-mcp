@@ -1,0 +1,637 @@
+{
+  "$comment": "Source of truth for tools exposed by the Seiva MCP server. The canonical IDE entrypoint is seiva-mcp/client.js (referenced by .mcp.json); seiva-mcp/index.js is kept as a partnership-admin alternate entrypoint and exposes the same callable tools. Loaded by Seiva.Test.McpToolsCatalog as the coverage gate. Each entry: name, method (HTTP verb or null), path (mgmt path with :param placeholders, or null), description, category, client_only (true if no HTTP call — checkout/state tools run locally and bypass the coverage gate).",
+  "tools": [
+    {
+      "name": "seiva_list_workspaces",
+      "method": "GET",
+      "path": "/workspaces",
+      "category": "workspaces",
+      "client_only": false,
+      "description": "List workspaces accessible by this API key."
+    },
+    {
+      "name": "seiva_select_workspace",
+      "method": null,
+      "path": null,
+      "category": "workspaces",
+      "client_only": true,
+      "description": "Select which workspace to operate on (client-side state)."
+    },
+    {
+      "name": "seiva_create_workspace",
+      "method": "POST",
+      "path": "/workspaces",
+      "category": "workspaces",
+      "client_only": false,
+      "description": "Create a new workspace inside the partnership of this API key."
+    },
+    {
+      "name": "seiva_list_apps",
+      "method": "GET",
+      "path": "/apps",
+      "category": "apps",
+      "client_only": false,
+      "description": "List all apps in the workspace."
+    },
+    {
+      "name": "seiva_get_app",
+      "method": "GET",
+      "path": "/apps/:app_id",
+      "category": "apps",
+      "client_only": false,
+      "description": "Get details of a specific app."
+    },
+    {
+      "name": "seiva_get_context",
+      "method": "GET",
+      "path": "/apps/:app_id/context",
+      "category": "apps",
+      "client_only": false,
+      "description": "Returns FULL builder context for an app."
+    },
+    {
+      "name": "seiva_get_project_context",
+      "method": "GET",
+      "path": "/apps/:app_id/project-context",
+      "category": "apps",
+      "client_only": false,
+      "description": "Get structured project context (summary, manifest, palette)."
+    },
+    {
+      "name": "seiva_list_instructions",
+      "method": "GET",
+      "path": "/instructions",
+      "category": "instructions",
+      "client_only": false,
+      "description": "List all available instruction/prompt files."
+    },
+    {
+      "name": "seiva_get_instructions",
+      "method": "GET",
+      "path": "/instructions/:names",
+      "category": "instructions",
+      "client_only": false,
+      "description": "Load content of specific instruction files by name."
+    },
+    {
+      "name": "seiva_list_files",
+      "method": "GET",
+      "path": "/apps/:app_id/files",
+      "category": "files",
+      "client_only": false,
+      "description": "List all files in an app."
+    },
+    {
+      "name": "seiva_read_file",
+      "method": "GET",
+      "path": "/apps/:app_id/files/:path",
+      "category": "files",
+      "client_only": false,
+      "description": "Read a specific file by path."
+    },
+    {
+      "name": "seiva_write_file",
+      "method": "PUT",
+      "path": "/apps/:app_id/files",
+      "category": "files",
+      "client_only": false,
+      "description": "Create or update a single file."
+    },
+    {
+      "name": "seiva_edit_file_diff",
+      "method": "PATCH",
+      "path": "/apps/:app_id/files",
+      "category": "files",
+      "client_only": false,
+      "description": "Apply surgical edits to an existing file using search-and-replace diffs."
+    },
+    {
+      "name": "seiva_write_files",
+      "method": "PUT",
+      "path": "/apps/:app_id/files/batch",
+      "category": "files",
+      "client_only": false,
+      "description": "Create or update multiple files at once (batch)."
+    },
+    {
+      "name": "seiva_delete_file",
+      "method": "DELETE",
+      "path": "/apps/:app_id/files/:path",
+      "category": "files",
+      "client_only": false,
+      "description": "Delete a file by path."
+    },
+    {
+      "name": "seiva_set_app_permissions",
+      "method": "PATCH",
+      "path": "/apps/:app_id/permissions",
+      "category": "apps",
+      "client_only": false,
+      "description": "Update an app's permissioning (visibility, allowed_user_ids, sharing_mode, allowed_agent_ids)."
+    },
+    {
+      "name": "seiva_build_app",
+      "method": "POST",
+      "path": "/apps/:app_id/build",
+      "category": "apps",
+      "client_only": false,
+      "description": "Compile and deploy an app."
+    },
+    {
+      "name": "seiva_create_app",
+      "method": "POST",
+      "path": "/apps",
+      "category": "apps",
+      "client_only": false,
+      "description": "Create a new workspace app (auto-scaffolds React+Tailwind starter). Requires a user-scoped API key."
+    },
+    {
+      "name": "seiva_publish_app",
+      "method": "POST",
+      "path": "/apps/:app_id/publish",
+      "category": "apps",
+      "client_only": false,
+      "description": "Snapshot the app's working tree as a published version."
+    },
+    {
+      "name": "seiva_get_app_runtime_errors",
+      "method": "GET",
+      "path": "/apps/:app_id/errors",
+      "category": "apps",
+      "client_only": false,
+      "description": "List runtime errors captured by the app SDK (window.onerror, unhandledrejection, console.error)."
+    },
+    {
+      "name": "seiva_list_app_agents",
+      "method": "GET",
+      "path": "/apps/:app_id/agents",
+      "category": "apps",
+      "client_only": false,
+      "description": "List agents available to the app (for ai.ask() in app code)."
+    },
+    {
+      "name": "seiva_list_available_datapacks",
+      "method": "GET",
+      "path": "/apps/:app_id/datapacks",
+      "category": "datapacks",
+      "client_only": false,
+      "description": "List Data Models and Analytics tables activated in the workspace, with current grants for this app."
+    },
+    {
+      "name": "seiva_describe_datapack_table",
+      "method": "GET",
+      "path": "/apps/:app_id/datapacks/:pack_key/tables/:table_name",
+      "category": "datapacks",
+      "client_only": false,
+      "description": "Describe a specific Data Model / Analytics table: columns, types, sample rows."
+    },
+    {
+      "name": "seiva_request_datapack_grant",
+      "method": "POST",
+      "path": "/apps/:app_id/datapacks/grants",
+      "category": "datapacks",
+      "client_only": false,
+      "description": "Request workspace-admin approval (HITL) to grant the app access to specific tables."
+    },
+    {
+      "name": "seiva_request_external_dependency",
+      "method": "POST",
+      "path": "/apps/:app_id/external-deps",
+      "category": "apps",
+      "client_only": false,
+      "description": "Classify/approve an external host for CSP script-src or connect-src."
+    },
+    {
+      "name": "seiva_upload_app_asset",
+      "method": "POST",
+      "path": "/apps/:app_id/storage/files",
+      "category": "storage",
+      "client_only": false,
+      "description": "Upload an asset (image, font, PDF, JSON) into the app's storage via Management API."
+    },
+    {
+      "name": "seiva_list_pending_approvals",
+      "method": "GET",
+      "path": "/apps/:app_id/approvals",
+      "category": "approvals",
+      "client_only": false,
+      "description": "List HITL approvals still pending (datapack grants, external-dep requests)."
+    },
+    {
+      "name": "seiva_acquire_app_lock",
+      "method": "POST",
+      "path": "/apps/:app_id/lock/acquire",
+      "category": "lock",
+      "client_only": false,
+      "description": "Acquire the EditLock on an app for the current user (user-scoped key required)."
+    },
+    {
+      "name": "seiva_renew_app_lock",
+      "method": "POST",
+      "path": "/apps/:app_id/lock/renew",
+      "category": "lock",
+      "client_only": false,
+      "description": "Renew the EditLock TTL; auto re-acquires if expired between heartbeats."
+    },
+    {
+      "name": "seiva_release_app_lock",
+      "method": "POST",
+      "path": "/apps/:app_id/lock/release",
+      "category": "lock",
+      "client_only": false,
+      "description": "Release the EditLock held by the current user."
+    },
+    {
+      "name": "seiva_get_app_lock",
+      "method": "GET",
+      "path": "/apps/:app_id/lock",
+      "category": "lock",
+      "client_only": false,
+      "description": "Inspect the current EditLock state (free or held + holder info)."
+    },
+    {
+      "name": "seiva_list_app_data_grants",
+      "method": "GET",
+      "path": "/apps/:app_id/grants",
+      "category": "grants",
+      "client_only": false,
+      "description": "List per-table data grants for an app (DataPacks + DuckLake)."
+    },
+    {
+      "name": "seiva_grant_app_data",
+      "method": "POST",
+      "path": "/apps/:app_id/grants",
+      "category": "grants",
+      "client_only": false,
+      "description": "Grant or update an app's read/write access to a table in a DataPack or DuckLake view."
+    },
+    {
+      "name": "seiva_revoke_app_data",
+      "method": "DELETE",
+      "path": "/apps/:app_id/grants/:pack_key/:table_name",
+      "category": "grants",
+      "client_only": false,
+      "description": "Revoke an app's access to a specific table."
+    },
+    {
+      "name": "seiva_list_agents",
+      "method": "GET",
+      "path": "/agents",
+      "category": "agents",
+      "client_only": false,
+      "description": "List all agents in the workspace."
+    },
+    {
+      "name": "seiva_get_agent",
+      "method": "GET",
+      "path": "/agents/:id",
+      "category": "agents",
+      "client_only": false,
+      "description": "Get agent details by id."
+    },
+    {
+      "name": "seiva_create_agent",
+      "method": "POST",
+      "path": "/agents",
+      "category": "agents",
+      "client_only": false,
+      "description": "Create a new agent."
+    },
+    {
+      "name": "seiva_update_agent",
+      "method": "PUT",
+      "path": "/agents/:id",
+      "category": "agents",
+      "client_only": false,
+      "description": "Update an existing agent."
+    },
+    {
+      "name": "seiva_delete_agent",
+      "method": "DELETE",
+      "path": "/agents/:id",
+      "category": "agents",
+      "client_only": false,
+      "description": "Delete (archive) an agent."
+    },
+    {
+      "name": "seiva_list_skills",
+      "method": "GET",
+      "path": "/skills",
+      "category": "skills",
+      "client_only": false,
+      "description": "List all skills in the workspace."
+    },
+    {
+      "name": "seiva_get_skill",
+      "method": "GET",
+      "path": "/skills/:id",
+      "category": "skills",
+      "client_only": false,
+      "description": "Get skill details by id."
+    },
+    {
+      "name": "seiva_create_skill",
+      "method": "POST",
+      "path": "/skills",
+      "category": "skills",
+      "client_only": false,
+      "description": "Create a new skill."
+    },
+    {
+      "name": "seiva_update_skill",
+      "method": "PUT",
+      "path": "/skills/:id",
+      "category": "skills",
+      "client_only": false,
+      "description": "Update an existing skill."
+    },
+    {
+      "name": "seiva_delete_skill",
+      "method": "DELETE",
+      "path": "/skills/:id",
+      "category": "skills",
+      "client_only": false,
+      "description": "Delete (archive) a skill."
+    },
+    {
+      "name": "seiva_list_tools",
+      "method": "GET",
+      "path": "/tools",
+      "category": "tools",
+      "client_only": false,
+      "description": "List all tools in the workspace."
+    },
+    {
+      "name": "seiva_get_tool",
+      "method": "GET",
+      "path": "/tools/:id",
+      "category": "tools",
+      "client_only": false,
+      "description": "Get tool details including code_body."
+    },
+    {
+      "name": "seiva_create_tool",
+      "method": "POST",
+      "path": "/tools",
+      "category": "tools",
+      "client_only": false,
+      "description": "Create a new custom tool."
+    },
+    {
+      "name": "seiva_update_tool",
+      "method": "PUT",
+      "path": "/tools/:id",
+      "category": "tools",
+      "client_only": false,
+      "description": "Update an existing tool."
+    },
+    {
+      "name": "seiva_delete_tool",
+      "method": "DELETE",
+      "path": "/tools/:id",
+      "category": "tools",
+      "client_only": false,
+      "description": "Delete a tool."
+    },
+    {
+      "name": "seiva_list_builtin_tools",
+      "method": "GET",
+      "path": "/tools/builtin",
+      "category": "tools",
+      "client_only": false,
+      "description": "List built-in tools available to this workspace."
+    },
+    {
+      "name": "seiva_enable_builtin_tool",
+      "method": "POST",
+      "path": "/tools/builtin/:name/enable",
+      "category": "tools",
+      "client_only": false,
+      "description": "Enable a built-in tool for the current workspace."
+    },
+    {
+      "name": "seiva_list_schedules",
+      "method": "GET",
+      "path": "/schedules",
+      "category": "schedules",
+      "client_only": false,
+      "description": "List all schedules in the workspace."
+    },
+    {
+      "name": "seiva_get_schedule",
+      "method": "GET",
+      "path": "/schedules/:id",
+      "category": "schedules",
+      "client_only": false,
+      "description": "Get scheduled trigger details by id."
+    },
+    {
+      "name": "seiva_create_schedule",
+      "method": "POST",
+      "path": "/schedules",
+      "category": "schedules",
+      "client_only": false,
+      "description": "Create a new scheduled trigger."
+    },
+    {
+      "name": "seiva_update_schedule",
+      "method": "PUT",
+      "path": "/schedules/:id",
+      "category": "schedules",
+      "client_only": false,
+      "description": "Update an existing schedule."
+    },
+    {
+      "name": "seiva_delete_schedule",
+      "method": "DELETE",
+      "path": "/schedules/:id",
+      "category": "schedules",
+      "client_only": false,
+      "description": "Delete a scheduled trigger."
+    },
+    {
+      "name": "seiva_fire_schedule",
+      "method": "POST",
+      "path": "/schedules/:id/fire",
+      "category": "schedules",
+      "client_only": false,
+      "description": "Fire a schedule immediately (async)."
+    },
+    {
+      "name": "seiva_pause_schedule",
+      "method": "POST",
+      "path": "/schedules/:id/pause",
+      "category": "schedules",
+      "client_only": false,
+      "description": "Pause an active schedule."
+    },
+    {
+      "name": "seiva_resume_schedule",
+      "method": "POST",
+      "path": "/schedules/:id/resume",
+      "category": "schedules",
+      "client_only": false,
+      "description": "Resume a paused schedule."
+    },
+    {
+      "name": "seiva_schedule_stats",
+      "method": "GET",
+      "path": "/schedules/stats",
+      "category": "schedules",
+      "client_only": false,
+      "description": "Get schedule statistics for the workspace."
+    },
+    {
+      "name": "seiva_list_members",
+      "method": "GET",
+      "path": "/members",
+      "category": "members",
+      "client_only": false,
+      "description": "List users in the workspace with their role."
+    },
+    {
+      "name": "seiva_set_member_role",
+      "method": "PATCH",
+      "path": "/members/:user_id",
+      "category": "members",
+      "client_only": false,
+      "description": "Change a workspace member's role (owner/admin/member/viewer)."
+    },
+    {
+      "name": "seiva_get_logs",
+      "method": "GET",
+      "path": "/logs/agent/sessions",
+      "category": "logs",
+      "client_only": false,
+      "description": "List agent sessions with error counts."
+    },
+    {
+      "name": "seiva_get_session_logs",
+      "method": "GET",
+      "path": "/logs/agent/sessions/:session_id",
+      "category": "logs",
+      "client_only": false,
+      "description": "Get detailed logs for a specific agent session."
+    },
+    {
+      "name": "seiva_get_build_logs",
+      "method": "GET",
+      "path": "/logs/build/:app_id",
+      "category": "logs",
+      "client_only": false,
+      "description": "Get build logs for an app."
+    },
+    {
+      "name": "seiva_get_app_usage",
+      "method": "GET",
+      "path": "/logs/app-usage",
+      "category": "logs",
+      "client_only": false,
+      "description": "Get app usage logs."
+    },
+    {
+      "name": "seiva_analyze_external_project",
+      "method": null,
+      "path": null,
+      "category": "migration",
+      "client_only": true,
+      "description": "Analyze an external project directory: framework, deps, backend SDKs, env vars, assets. Local filesystem only — no upload."
+    },
+    {
+      "name": "seiva_generate_migration_plan",
+      "method": null,
+      "path": null,
+      "category": "migration",
+      "client_only": true,
+      "description": "Render a markdown migration plan from an analysis (or fresh source_path)."
+    },
+    {
+      "name": "seiva_import_project_files",
+      "method": null,
+      "path": null,
+      "category": "migration",
+      "client_only": true,
+      "description": "Batch-import a local project tree into a Seiva app — text files via /files/batch, binaries via /storage/files. Aborts on security-audit rejection."
+    },
+    {
+      "name": "seiva_import_env_vars",
+      "method": null,
+      "path": null,
+      "category": "migration",
+      "client_only": true,
+      "description": "Persist .env entries as workspace credentials (encrypted). Replaces process.env.X with seiva.credential('X')."
+    },
+    {
+      "name": "seiva_list_credentials",
+      "method": "GET",
+      "path": "/credentials",
+      "category": "credentials",
+      "client_only": false,
+      "description": "List workspace credentials (id, name, type, visibility — values never returned)."
+    },
+    {
+      "name": "seiva_create_credential",
+      "method": "POST",
+      "path": "/credentials",
+      "category": "credentials",
+      "client_only": false,
+      "description": "Create a workspace credential with an encrypted value."
+    },
+    {
+      "name": "seiva_app_checkout_status",
+      "method": null,
+      "path": null,
+      "category": "checkout",
+      "client_only": true,
+      "description": "Inspect a Seiva App checkout in the cwd. Returns app_id, workspace_id, and added/modified/deleted files vs the last sync. Reads .seiva/manifest.json locally; no backend call."
+    },
+    {
+      "name": "seiva_app_pull",
+      "method": null,
+      "path": null,
+      "category": "checkout",
+      "client_only": true,
+      "description": "Pull the latest working tree from Seiva into the local checkout. Wraps the seiva CLI."
+    },
+    {
+      "name": "seiva_app_push",
+      "method": null,
+      "path": null,
+      "category": "checkout",
+      "client_only": true,
+      "description": "Push the local working tree to Seiva. Acquires EditLock and uses optimistic concurrency (expected_sha256 per file). Wraps the seiva CLI."
+    },
+    {
+      "name": "seiva_app_build_local",
+      "method": null,
+      "path": null,
+      "category": "checkout",
+      "client_only": true,
+      "description": "Build the app referenced by the local checkout, returning the preview URL. Wraps the seiva CLI (does not push first)."
+    },
+    {
+      "name": "seiva_tool_checkout_status",
+      "method": null,
+      "path": null,
+      "category": "checkout",
+      "client_only": true,
+      "description": "Inspect a Seiva Tool checkout in the cwd. Returns tool_id, workspace_id, and which of (main.py, tool.json, input_schema.json) were locally modified. No side effects."
+    },
+    {
+      "name": "seiva_tool_pull",
+      "method": null,
+      "path": null,
+      "category": "checkout",
+      "client_only": true,
+      "description": "Pull the latest Python tool from Seiva into the local checkout. Wraps the seiva CLI."
+    },
+    {
+      "name": "seiva_tool_push",
+      "method": null,
+      "path": null,
+      "category": "checkout",
+      "client_only": true,
+      "description": "Push the local tool checkout to Seiva with EditLock + optimistic concurrency. Wraps the seiva CLI."
+    }
+  ]
+}
