@@ -70,10 +70,26 @@ async function getContext(appId) {
 
 // ── Server Setup ────────────────────────────────────────────────────────────
 
-const server = new McpServer({
-  name: "seiva",
-  version: "0.1.0",
-});
+const SERVER_INSTRUCTIONS = `Seiva platform MCP (partnership key — multi-workspace).
+
+First: call seiva_list_workspaces, then seiva_select_workspace before any
+workspace-scoped action. Then follow the IDE agent protocol:
+1. seiva_get_instructions("ide_agent_guide") — capabilities, limits, doc-loading map.
+2. Before writing app code: seiva_get_instructions("guardrails").
+3. Orient on an app via seiva_get_project_context; never start from seiva_get_context.
+4. seiva_list_instructions to discover more (category "recipes" = per-feature recipes;
+   never load "app_builder" legacy).
+EditLock: acquire → renew 30s → release; never force a 409.
+Builds: retry only when classifier.retriable=true; infra/config → surface to operator.
+HITL: poll seiva_list_pending_approvals every 60-120s for pending grants/deps.`;
+
+const server = new McpServer(
+  {
+    name: "seiva",
+    version: "0.3.0",
+  },
+  { instructions: SERVER_INSTRUCTIONS }
+);
 
 // ── Workspaces ─────────────────────────────────────────────────────────────
 

@@ -20,7 +20,17 @@ const pApi = createApi(SEIVA_URL, SEIVA_API_KEY, () => null);
 // Workspace API (uses selected workspace header for log/schedule reads)
 const wApi = createApi(SEIVA_URL, SEIVA_API_KEY, () => selectedWorkspaceId);
 
-const server = new McpServer({ name: "seiva-admin", version: "0.1.0" });
+const SERVER_INSTRUCTIONS = `Seiva platform MCP (admin — partnership catalog management).
+
+This entrypoint publishes/archives partnership tools, agents, skills and apps.
+For app-building guidance (capabilities, guardrails, recipes), call
+seiva_get_instructions("ide_agent_guide") then load specific docs on demand.
+seiva_list_instructions lists the catalog (category "recipes" = per-feature recipes).`;
+
+const server = new McpServer(
+  { name: "seiva-admin", version: "0.3.0" },
+  { instructions: SERVER_INSTRUCTIONS }
+);
 
 // ── Workspaces ──────────────────────────────────────────────────────────────
 

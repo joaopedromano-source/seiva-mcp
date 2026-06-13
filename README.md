@@ -57,6 +57,7 @@ The full set of tools (with HTTP method/path and category) is documented in [`to
 - **HITL approvals (polling):** `seiva_list_pending_approvals`
 - **Credentials:** `seiva_list_credentials`, `seiva_create_credential`
 - **Agents / Skills / Tools / Schedules:** full CRUD per category
+- **Tool execution:** `seiva_execute_tool` — run any workspace tool (custom, builtin, or partnership) by name with arbitrary input, deterministically (no agent/LLM). Registered in `client.js` only — the backend requires a workspace-scoped key. Approval-gated tools fail with `requires_approval` instead of executing
 - **Data grants:** `seiva_list_app_data_grants`, `seiva_grant_app_data`, `seiva_revoke_app_data`
 - **Local checkout (CLI bridge):** `seiva_app_checkout_status`, `seiva_app_pull`, `seiva_app_push`, `seiva_app_build_local`, and equivalents for Python tools (`seiva_tool_*`)
 - **Migration (client-only):** `seiva_analyze_external_project`, `seiva_generate_migration_plan`, `seiva_import_project_files`, `seiva_import_env_vars`
@@ -82,6 +83,16 @@ When the user says "bring this Lovable / v0 / Next.js project into Seiva", run t
 ```
 
 Load the framework-by-framework cheatsheet, SDK mapping (Supabase → DataPacks, Firebase → workspace users, etc.), and the "things that NEVER survive the import" list via `seiva_get_instructions` when starting a migration — the prompt lives on the platform and is delivered through that tool.
+
+### Orientation (how the agent learns what it can/can't do)
+
+The server ships an `instructions` field at MCP init (you'll see it in the session header) that mirrors the in-platform App Builder agent's system prompt: the session protocol plus EditLock / build-loop / HITL etiquette. The full guidance lives on the platform — load it on demand:
+
+1. **`seiva_get_instructions("ide_agent_guide")`** first — capability map, hard limits, and a table of *which doc to load when*.
+2. **`seiva_get_instructions("guardrails")`** before writing any app code — the closed library list and security rules.
+3. **`seiva_list_instructions`** to discover more. Category `core` has the App Builder split (`app_builder_core` / `app_builder_discovery` / `app_builder_editing` — never the ~168KB legacy `app_builder`); category `recipes` has per-feature recipes (`recipe_forms`, `recipe_charts`, `recipe_email`, …) — load a recipe *before* coding that feature.
+
+This is the same lazy-loading pattern the in-platform builder (Monica/Matt) uses: a small always-on core, with depth fetched on demand.
 
 ### Headless behaviour (no LiveView, no presence)
 

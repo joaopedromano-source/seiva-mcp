@@ -63,7 +63,7 @@
       "path": "/instructions",
       "category": "instructions",
       "client_only": false,
-      "description": "List all available instruction/prompt files."
+      "description": "List available instruction/prompt files (filterable by category). Categories include 'core' (start with 'ide_agent_guide') and 'recipes' (per-feature App Builder recipes)."
     },
     {
       "name": "seiva_get_instructions",
@@ -71,7 +71,7 @@
       "path": "/instructions/:names",
       "category": "instructions",
       "client_only": false,
-      "description": "Load content of specific instruction files by name."
+      "description": "Load instruction files by name (max 5, comma-separated). Start with 'ide_agent_guide'; never load 'app_builder' (legacy) — use 'app_builder_core' + 'recipe_*'."
     },
     {
       "name": "seiva_list_files",
@@ -216,6 +216,54 @@
       "category": "approvals",
       "client_only": false,
       "description": "List HITL approvals still pending (datapack grants, external-dep requests)."
+    },
+    {
+      "name": "seiva_list_records",
+      "method": "GET",
+      "path": "/apps/:app_id/data/:collection",
+      "category": "data",
+      "client_only": false,
+      "description": "List records in an app data collection (admin-level CRUD, bypasses data_scope ACL). Supports filter/sort/limit/offset/count."
+    },
+    {
+      "name": "seiva_count_records",
+      "method": "GET",
+      "path": "/apps/:app_id/data/:collection/count",
+      "category": "data",
+      "client_only": false,
+      "description": "Return the count of records in a collection matching an optional filter."
+    },
+    {
+      "name": "seiva_get_record",
+      "method": "GET",
+      "path": "/apps/:app_id/data/:collection/:id",
+      "category": "data",
+      "client_only": false,
+      "description": "Read a single record by id from an app data collection."
+    },
+    {
+      "name": "seiva_create_record",
+      "method": "POST",
+      "path": "/apps/:app_id/data/:collection",
+      "category": "data",
+      "client_only": false,
+      "description": "Insert a new record into an app data collection. created_by defaults to null (system row)."
+    },
+    {
+      "name": "seiva_update_record",
+      "method": "PUT",
+      "path": "/apps/:app_id/data/:collection/:id",
+      "category": "data",
+      "client_only": false,
+      "description": "Partially update a record (JSONB merge). Preserves fields not present in the payload."
+    },
+    {
+      "name": "seiva_delete_record",
+      "method": "DELETE",
+      "path": "/apps/:app_id/data/:collection/:id",
+      "category": "data",
+      "client_only": false,
+      "description": "Hard-delete a record by id."
     },
     {
       "name": "seiva_acquire_app_lock",
@@ -392,6 +440,14 @@
       "category": "tools",
       "client_only": false,
       "description": "Delete a tool."
+    },
+    {
+      "name": "seiva_execute_tool",
+      "method": "POST",
+      "path": "/tools/execute",
+      "category": "tools",
+      "client_only": false,
+      "description": "Execute a workspace tool by name (custom, builtin, or partnership) with the given input and return the raw result. Deterministic — no agent/LLM. Approval-gated tools return a requires_approval error."
     },
     {
       "name": "seiva_list_builtin_tools",

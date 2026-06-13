@@ -45,7 +45,31 @@ async function getContext(appId) {
   return contextCache[appId];
 }
 
-const server = new McpServer({ name: "seiva-client", version: "0.1.0" });
+const SERVER_INSTRUCTIONS = `Seiva platform MCP — workspace management for IDE coding agents.
+
+Session protocol:
+1. Call seiva_get_instructions("ide_agent_guide") FIRST. It maps capabilities, hard
+   limits, and which instruction doc to load when. Cache it for the session.
+2. Before WRITING any app code: seiva_get_instructions("guardrails") — closed library
+   list, no external hosts without approval, no auth code, no direct DB.
+3. To orient on an app: seiva_get_project_context (summary + manifest), then
+   seiva_list_files / seiva_read_file. Do NOT start from seiva_get_context (~140KB).
+4. Discover more docs with seiva_list_instructions. Category "recipes" has per-feature
+   recipes (forms, tables, charts, email, ...) — load the recipe BEFORE coding that
+   feature. Never load "app_builder" (legacy, ~168KB) — use "app_builder_core" + "recipe_*".
+
+Etiquette:
+- EditLock: seiva_acquire_app_lock before edits, renew every 30s, release at session
+  end. On 409 wait or ask the holder — never force.
+- Builds: on failure use classifier.{kind,retriable,agent_prompt}. Retry only when
+  retriable=true (kind code/security); infra/config → surface to the operator.
+- HITL: grant/dependency requests return "pending" — tell the user where to approve,
+  then poll seiva_list_pending_approvals every 60-120s.`;
+
+const server = new McpServer(
+  { name: "seiva-client", version: "0.3.0" },
+  { instructions: SERVER_INSTRUCTIONS }
+);
 
 // ── Apps (full CRUD) ────────────────────────────────────────────────────────
 
@@ -84,7 +108,7 @@ server.tool("seiva_get_project_context",
 );
 
 server.tool("seiva_list_instructions",
-  "Lists available instruction files with purpose, category, and size. Use FIRST, then load with seiva_get_instructions.",
+  "Lists available instruction files with purpose, category, and size. Use FIRST, then load with seiva_get_instructions. Categories include 'core' (start with 'ide_agent_guide') and 'recipes' (per-feature App Builder recipes).",
   { category: z.string().optional() },
   async ({ category }) => {
     const q = category ? `?category=${encodeURIComponent(category)}` : "";
@@ -93,7 +117,7 @@ server.tool("seiva_list_instructions",
 );
 
 server.tool("seiva_get_instructions",
-  "Load instruction files by name. 'app_builder' is ~133KB — prefer 'guardrails' (~9KB). Max 5 per call.",
+  "Load instruction files by name. Start with 'ide_agent_guide'. NEVER load 'app_builder' (legacy ~168KB) — use 'app_builder_core' + 'recipe_*'. Max 5 per call; pass compact=true to strip optional sections.",
   { names: z.string(), compact: z.boolean().optional() },
   async ({ names, compact }) => {
     const q = compact ? "?compact=true" : "";
@@ -114,7 +138,7 @@ server.tool("seiva_read_file", "Read a file by path", {
 
 server.tool(
   "seiva_write_file",
-  "Create or update a file. Auto-returns builder context (guardrails, manifest) with the result.",
+  "Create or update a file. Auto-returns builder context (guardrails, manifest) with the result. Load instruction 'guardrails' before the first write of a session.",
   { app_id: z.string(), path: z.string(), content: z.string() },
   async ({ app_id, path, content }) => {
     const ctx = await getContext(app_id);
@@ -196,7 +220,9 @@ server.tool(
   "seiva_create_app",
   "Create a new workspace app via API key. Scaffolds the React+Tailwind starter " +
     "(App.tsx, lib/seiva.ts, components/ui/*) automatically. Requires a " +
-    "user-scoped API key (partnership keys cannot be the app creator).",
+    "user-scoped API key (partnership keys cannot be the app creator). " +
+    "After creating, load instructions 'app_builder_core' + 'guardrails' " +
+    "('app_builder_widget' when kind=widget) before writing code.",
   {
     name: z.string(),
     description: z.string().optional(),
@@ -338,6 +364,142 @@ server.tool(
   async ({ app_id }) => textResult(await api("GET", `/apps/${app_id}/approvals`))
 );
 
+// ── Data Collections (app_data_records, admin-level CRUD) ───────────────────
+//
+// These tools operate on `app_data_records` — the JSONB collections the app
+// reads/writes via `seiva.appdata(collection)` in the SDK. UNLIKE the runtime
+// API, this surface BYPASSES the app's `data_scope` ACL: every row in the
+// (workspace, app, collection) scope is visible/writable regardless of
+// whether the app is `private`, `shared`, or `hybrid`. The caller is a
+// workspace admin (same key that edits the source code), so honouring
+// `data_scope` would only show rows tagged to the admin's own user_id —
+// useless for seeding, debugging, or migration.
+//
+// Writes default to `created_by = nil` (system row, visible to all in-app
+// users via the runtime ACL) and `allowed_user_ids = []`. To scope a row
+// to specific users, pass `_allowed_user_ids: [user_uuid, ...]` inside
+// `data`.
+//
+// `environment` defaults to `"production"`. Pass `"test"` to operate on
+// the test environment.
+//
+// For data managed via DataPacks (Postgres relational schemas, DuckLake
+// analytics) use seiva_list_available_datapacks / seiva_describe_datapack_table
+// — those are read-only metadata. There is no MCP surface for DataPack row
+// CRUD yet.
+
+server.tool(
+  "seiva_list_records",
+  "List records in an app's data collection. Bypasses data_scope ACL (admin-level). " +
+    "Optional filter (JSON shape: {field, op, value} or {and|or: [...]}), sort (e.g. " +
+    "'-inserted_at' for desc), limit (default 100, max 1000), offset, count (true to " +
+    "return total_count). Returns {data: [...], collection, environment, total_count?}.",
+  {
+    app_id: z.string(),
+    collection: z.string(),
+    environment: z.enum(["production", "test"]).optional(),
+    filter: z.string().optional(),
+    sort: z.string().optional(),
+    limit: z.number().optional(),
+    offset: z.number().optional(),
+    count: z.boolean().optional(),
+  },
+  async ({ app_id, collection, ...rest }) => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(rest)) {
+      if (v !== undefined && v !== null && v !== "") p.set(k, String(v));
+    }
+    const q = p.toString() ? `?${p}` : "";
+    return textResult(await api("GET", `/apps/${app_id}/data/${collection}${q}`));
+  }
+);
+
+server.tool(
+  "seiva_count_records",
+  "Return the total number of records in a collection that match an optional filter. " +
+    "Cheap (no row fetch). Use instead of seiva_list_records when you only need a count.",
+  {
+    app_id: z.string(),
+    collection: z.string(),
+    environment: z.enum(["production", "test"]).optional(),
+    filter: z.string().optional(),
+  },
+  async ({ app_id, collection, environment, filter }) => {
+    const p = new URLSearchParams();
+    if (environment) p.set("environment", environment);
+    if (filter) p.set("filter", filter);
+    const q = p.toString() ? `?${p}` : "";
+    return textResult(await api("GET", `/apps/${app_id}/data/${collection}/count${q}`));
+  }
+);
+
+server.tool(
+  "seiva_get_record",
+  "Read a single record by id. Returns {data: {id, collection, data, environment, " +
+    "created_at, updated_at, _created_by, _allowed_user_ids}}. 404 if not in this app.",
+  {
+    app_id: z.string(),
+    collection: z.string(),
+    id: z.string(),
+    environment: z.enum(["production", "test"]).optional(),
+  },
+  async ({ app_id, collection, id, environment }) => {
+    const q = environment ? `?environment=${environment}` : "";
+    return textResult(await api("GET", `/apps/${app_id}/data/${collection}/${id}${q}`));
+  }
+);
+
+server.tool(
+  "seiva_create_record",
+  "Insert a new record. `data` is the JSON payload stored under `app_data_records.data`. " +
+    "By default `created_by` is null (system row, visible to everyone in-app). To scope to " +
+    "specific users, include `_allowed_user_ids: [<user_uuid>, ...]` inside `data`. " +
+    "Returns the created record at 201.",
+  {
+    app_id: z.string(),
+    collection: z.string(),
+    data: z.record(z.any()),
+    environment: z.enum(["production", "test"]).optional(),
+  },
+  async ({ app_id, collection, data, environment }) => {
+    const body = environment ? { data, environment } : { data };
+    return textResult(await api("POST", `/apps/${app_id}/data/${collection}`, body));
+  }
+);
+
+server.tool(
+  "seiva_update_record",
+  "Partially update a record. `data` is merged into the existing JSONB (`data || ?` in SQL) — " +
+    "fields not present are preserved. Include `_allowed_user_ids` inside `data` to rewrite ACL. " +
+    "Returns the updated record. 404 if record not found in this app.",
+  {
+    app_id: z.string(),
+    collection: z.string(),
+    id: z.string(),
+    data: z.record(z.any()),
+    environment: z.enum(["production", "test"]).optional(),
+  },
+  async ({ app_id, collection, id, data, environment }) => {
+    const body = environment ? { data, environment } : { data };
+    return textResult(await api("PUT", `/apps/${app_id}/data/${collection}/${id}`, body));
+  }
+);
+
+server.tool(
+  "seiva_delete_record",
+  "Hard-delete a record by id. Returns {ok: true} on success, 404 if not found.",
+  {
+    app_id: z.string(),
+    collection: z.string(),
+    id: z.string(),
+    environment: z.enum(["production", "test"]).optional(),
+  },
+  async ({ app_id, collection, id, environment }) => {
+    const q = environment ? `?environment=${environment}` : "";
+    return textResult(await api("DELETE", `/apps/${app_id}/data/${collection}/${id}${q}`));
+  }
+);
+
 // ── Agents (CRUD) ───────────────────────────────────────────────────────────
 
 server.tool("seiva_list_agents", "List workspace agents", {}, async () =>
@@ -395,6 +557,19 @@ server.tool("seiva_update_tool", "Update a workspace tool", {
 
 server.tool("seiva_delete_tool", "Delete a workspace tool", { id: z.string() },
   async ({ id }) => { await api("DELETE", `/tools/${id}`); return textResult({ deleted: true }); }
+);
+
+server.tool(
+  "seiva_execute_tool",
+  "Execute a workspace tool by name (custom, builtin, or partnership) and return its raw result. " +
+    "Deterministic — no agent/LLM. Use seiva_list_tools to discover names and input schemas. " +
+    "Tools that require approvers fail with requires_approval.",
+  {
+    tool: z.string().describe("Tool name (e.g. my_tool, seiva_web_search) or tool UUID"),
+    input: z.record(z.any()).optional().describe("Input object matching the tool's input_schema"),
+  },
+  async ({ tool, input }) =>
+    textResult(await api("POST", "/tools/execute", { tool, input: input || {} }))
 );
 
 // ── Schedules (CRUD) ────────────────────────────────────────────────────────
